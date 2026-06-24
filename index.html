@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeons & Deadlines — Офисное подземелье</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #c0c0c0;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 750px;
+            background: #111;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+        }
+
+        .screen {
+            display: block;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        pre {
+            color: #e6b800;
+            font-size: 14px;
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        h2 {
+            color: #ff5555;
+            text-align: center;
+            border-bottom: 1px dashed #444;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stats-panel {
+            background: #1a1a1a;
+            border: 1px solid #555;
+            padding: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .stat-item {
+            margin: 5px 10px;
+            white-space: nowrap;
+        }
+
+        .hp {
+            color: #ff4d4d;
+        }
+        .sanity {
+            color: #b380ff;
+        }
+        .coffee {
+            color: #d4a017;
+        }
+        .xp {
+            color: #66ccff;
+        }
+        .hour {
+            color: #ffaa00;
+        }
+
+        .log {
+            background: #050505;
+            border: 1px solid #333;
+            padding: 15px;
+            min-height: 150px;
+            max-height: 350px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-size: 15px;
+            color: #b0b0b0;
+            scroll-behavior: smooth;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            border-bottom: 1px dotted #2a2a2a;
+            padding-bottom: 5px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .success {
+            color: #6f6;
+        }
+        .failure {
+            color: #f66;
+        }
+        .info {
+            color: #cc0;
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #222;
+            color: #ddd;
+            border: 1px solid #555;
+            padding: 10px 25px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        button:hover:not(:disabled) {
+            background: #333;
+            border-color: #0f0;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .creation-form {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 5px;
+            border: 1px solid #444;
+        }
+
+        .stat-row {
+            display: flex;
+            align-items: center;
+            margin: 12px 0;
+            justify-content: space-between;
+        }
+
+        .stat-label {
+            width: 80px;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        input[type=range] {
+            width: 60%;
+            accent-color: #e6b800;
+        }
+
+        .stat-value {
+            width: 50px;
+            text-align: center;
+            background: #000;
+            border: 1px solid #666;
+            color: #fff;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .pool-info {
+            text-align: center;
+            font-size: 18px;
+            margin: 20px 0;
+            color: #ffaa00;
+        }
+
+        .coffee-options {
+            background: #1a1a1a;
+            border: 1px dashed #d4a017;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            text-align: center;
+            color: #d4a017;
+        }
+
+        .gameover-screen {
+            text-align: center;
+            font-size: 22px;
+            color: #ff4444;
+            background: #1a0000;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid #ff0000;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Заголовок -->
+        <pre>
+  ____  _   _ _   _ ____ _____ ___  ____    ____  ____    ____  _____  _   _ ____  _   _ ____  _____ ____
+ |  _ \| | | | \ | / ___| ____/ _ \|  _ \  / ___||  _ \  |  _ \| ____|| \ | / ___|| | | / ___|| ____|  _ \
+ | | | | | | |  \| \___ \  _|| | | | |_) | \___ \| | | | | | | |  _|  |  \| \___ \| | | \___ \|  _| | |_) |
+ | |_| | |_| | |\  |___) | |__| |_| |  _ <   ___) | |_| | | |_| | |___ | |\  |___) | |_| |___) | |___|  _ <
+ |____/ \___/|_| \_|____/|_____\___/|_| \_\ |____/|____/  |____/|_____||_| \_|____/ \___/|____/|_____|_| \_\
+        </pre>
+        <p style="text-align:center;color:#aaa;margin-bottom:20px;">Офисное подземелье чёрного юмора</p>
+
+        <!-- Экран создания персонажа -->
+        <div id="char-creation" class="screen">
+            <h2>📋 Создание сотрудника</h2>
+            <p style="text-align:center;margin-bottom:20px;">Распредели 12 очков между характеристиками (минимум 8).</p>
+            <div class="creation-form">
+                <div class="stat-row">
+                    <span class="stat-label">💪 STR</span>
+                    <input type="range" id="str-range" min="8" max="20" value="8" step="1">
+                    <span class="stat-value" id="str-val">8</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">🏃 DEX</span>
+                    <input type="range" id="dex-range" min="8" max="20" value="8" step="1">
+                    <span class="stat-value" id="dex-val">8</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">🧠 INT</span>
+                    <input type="range" id="int-range" min="8" max="20" value="8" step="1">
+                    <span class="stat-value" id="int-val">8</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">👄 CHA</span>
+                    <input type="range" id="cha-range" min="8" max="20" value="8" step="1">
+                    <span class="stat-value" id="cha-val">8</span>
+                </div>
+                <div class="pool-info">
+                    Осталось очков: <span id="points-left">12</span>
+                </div>
+                <div style="text-align:center;">
+                    <button id="create-btn" disabled>Создать сотрудника</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Экран игры -->
+        <div id="game-screen" class="screen hidden">
+            <div class="stats-panel" id="stats-panel">
+                <span class="stat-item hp">❤️ HP: <span id="hp-val">20</span></span>
+                <span class="stat-item sanity">🧠 Sanity: <span id="sanity-val">20</span></span>
+                <span class="stat-item coffee">☕ Coffee: <span id="coffee-val">3</span></span>
+                <span class="stat-item xp">⭐ XP: <span id="xp-val">0</span></span>
+                <span class="stat-item hour">🕒 Час: <span id="hour-val">0</span>/8</span>
+            </div>
+            <div class="log" id="log-container"></div>
+            <div class="actions" id="actions-panel"></div>
+        </div>
+
+        <!-- Экран game over / победы -->
+        <div id="gameover-screen" class="screen hidden"></div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ----------
+            const charCreation = document.getElementById('char-creation');
+            const gameScreen = document.getElementById('game-screen');
+            const gameoverScreen = document.getElementById('gameover-screen');
+            const logContainer = document.getElementById('log-container');
+            const actionsPanel = document.getElementById('actions-panel');
+
+            // Ползунки и значения
+            const sliders = {
+                str: document.getElementById('str-range'),
+                dex: document.getElementById('dex-range'),
+                int: document.getElementById('int-range'),
+                cha: document.getElementById('cha-range')
+            };
+            const valDisplays = {
+                str: document.getElementById('str-val'),
+                dex: document.getElementById('dex-val'),
+                int: document.getElementById('int-val'),
+                cha: document.getElementById('cha-val')
+            };
+            const pointsLeftSpan = document.getElementById('points-left');
+            const createBtn = document.getElementById('create-btn');
+
+            // Статы на экране игры
+            const hpSpan = document.getElementById('hp-val');
+            const sanitySpan = document.getElementById('sanity-val');
+            const coffeeSpan = document.getElementById('coffee-val');
+            const xpSpan = document.getElementById('xp-val');
+            const hourSpan = document.getElementById('hour-val');
+
+            // Состояние игры
+            let gameState = {
+                stats: {
+                    STR: 8,
+                    DEX: 8,
+                    INT: 8,
+                    CHA: 8,
+                    HP: 20,
+                    Sanity: 20,
+                    Coffee: 3,
+                    XP: 0
+                },
+                hour: 0,
+                currentEvent: null,
+                processing: false,
+                gameOver: false
+            };
+
+            // ---------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------
+            function mod(stat) {
+                return Math.floor((stat - 10) / 2);
+            }
+
+            function d20() {
+                return Math.floor(Math.random() * 20) + 1;
+            }
+
+            function rollDice(diceStr) {
+                // поддерживает только "1d4" для урона
+                if (diceStr === "1d4") {
+                    return Math.floor(Math.random() * 4) + 1;
+                }
+                return 0;
+            }
+
+            function addLog(message, cssClass = '') {
+                const entry = document.createElement('div');
+                entry.className = 'log-entry ' + (cssClass || '');
+                entry.textContent = message;
+                logContainer.appendChild(entry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+
+            function updateStatsDisplay() {
+                hpSpan.textContent = gameState.stats.HP;
+                sanitySpan.textContent = gameState.stats.Sanity;
+                coffeeSpan.textContent = gameState.stats.Coffee;
+                xpSpan.textContent = gameState.stats.XP;
+                hourSpan.textContent = gameState.hour;
+            }
+
+            function showScreen(screen) {
+                charCreation.classList.add('hidden');
+                gameScreen.classList.add('hidden');
+                gameoverScreen.classList.add('hidden');
+                screen.classList.remove('hidden');
+            }
+
+            // ---------- СОБЫТИЯ ----------
+            const EVENTS = [{
+                desc: "🐉 Дракон Дедлайна изрыгает пламя правок. Проект нужно сдать вчера.",
+                check: "INT",
+                dc: 13,
+                success: {
+                    message: "Ты виртуозно собираешь презентацию из кусков легаси-кода. +1 XP. Дракон обиженно коптит.",
+                    effects: [{ stat: "XP", value: 1 }]
+                },
+                fail: {
+                    message: "Ты путаешь файлы и отправляешь заказчику свои мемы. -1d4 Sanity. Дракон ржёт.",
+                    effects: [{ stat: "Sanity", dice: "1d4", sign: -1 }]
+                }
+            }, {
+                desc: "☕ Ты находишь древний алтарь с зельем 'Эспрессо Двойной'. Выглядит подозрительно.",
+                check: "STR",
+                dc: 12,
+                success: {
+                    message: "Желудок выдержал. +1 Coffee и дрожь в коленях (бафф к Dex +2 на один бросок).",
+                    effects: [{ stat: "Coffee", value: 1 }]
+                },
+                fail: {
+                    message: "Зелье оказалось прокисшим молоком. -1 HP, но ты получаешь ачивку 'Желудок-терминатор'.",
+                    effects: [{ stat: "HP", value: -1 }]
+                }
+            }, {
+                desc: "👻 Призрак уволенного сотрудника стонет в вентиляции: 'Верни мою кружку…'",
+                check: "CHA",
+                dc: 14,
+                success: {
+                    message: "Ты обещаешь оставить кружку на его бывшем столе. +1 Sanity и тихий спиритический сеанс.",
+                    effects: [{ stat: "Sanity", value: 1 }]
+                },
+                fail: {
+                    message: "Ты паникуешь и предлагаешь призраку свою работу. -1d4 Sanity, начальник смотрит косо.",
+                    effects: [{ stat: "Sanity", dice: "1d4", sign: -1 }]
+                }
+            }, {
+                desc: "🤖 Принтер Mimic пытается сожрать твой отчёт (и палец).",
+                check: "DEX",
+                dc: 13,
+                success: {
+                    message: "Ты уклоняешься и проводишь техобслуживание кулаком. Принтер урчит и печатает.",
+                    effects: []
+                },
+                fail: {
+                    message: "Принтер жуёт галстук и выплёвывает чек на 0 рублей. -1d4 HP и -1 CHA из-за внешнего вида.",
+                    effects: [
+                        { stat: "HP", dice: "1d4", sign: -1 },
+                        { stat: "CHA", value: -1 }
+                    ]
+                }
+            }, {
+                desc: "🗣️ Планарный Созыв: Совещание, которое должно было быть письмом.",
+                check: "CHA",
+                dc: 15,
+                success: {
+                    message: "Ты говоришь 'Давайте синхронизируемся' так убедительно, что встречу сокращают. +1 XP.",
+                    effects: [{ stat: "XP", value: 1 }]
+                },
+                fail: {
+                    message: "Встреча затягивается на 3 часа. Ты теряешь 1d4 Sanity и проклинаешь Agile-манифест.",
+                    effects: [{ stat: "Sanity", dice: "1d4", sign: -1 }]
+                }
+            }, {
+                desc: "💀 HR-некромант предлагает 'безобидный тимбилдинг' за счёт твоей души.",
+                check: "INT",
+                dc: 14,
+                success: {
+                    message: "Ты распознаёшь ловушку и притворяешься мёртвым. +1 Sanity.",
+                    effects: [{ stat: "Sanity", value: 1 }]
+                },
+                fail: {
+                    message: "Ты подписываешь договор кровью. -2 CHA, и теперь ты обязан носить бейдж с улыбающимся смайликом.",
+                    effects: [{ stat: "CHA", value: -2 }]
+                }
+            }, {
+                desc: "📦 Проклятый шкаф с офисными принадлежностями: ручки, которые не пишут, и скрепки, гнущиеся от взгляда.",
+                check: "DEX",
+                dc: 11,
+                success: {
+                    message: "Ты находишь рабочий маркер и рисуешь на стене портал домой (не работает, но красиво).",
+                    effects: []
+                },
+                fail: {
+                    message: "Шкаф роняет коробку на ногу. -1 HP и ненависть к IKEA.",
+                    effects: [{ stat: "HP", value: -1 }]
+                }
+            }];
+
+            // ---------- ПРИМЕНЕНИЕ ЭФФЕКТОВ ----------
+            function applyEffects(effects) {
+                effects.forEach(eff => {
+                    let val = 0;
+                    if (eff.dice) {
+                        val = rollDice(eff.dice) * (eff.sign || 1);
+                    } else if (eff.value !== undefined) {
+                        val = eff.value;
+                    }
+
+                    const stat = eff.stat;
+                    if (stat === "HP") {
+                        gameState.stats.HP += val;
+                        if (gameState.stats.HP < 0) gameState.stats.HP = 0;
+                    } else if (stat === "Sanity") {
+                        gameState.stats.Sanity += val;
+                        if (gameState.stats.Sanity > 20) gameState.stats.Sanity = 20;
+                        if (gameState.stats.Sanity < 0) gameState.stats.Sanity = 0;
+                    } else if (stat === "Coffee") {
+                        gameState.stats.Coffee += val;
+                        if (gameState.stats.Coffee < 0) gameState.stats.Coffee = 0;
+                    } else if (stat === "XP") {
+                        gameState.stats.XP += val;
+                    } else if (stat === "CHA" || stat === "STR" || stat === "DEX" || stat === "INT") {
+                        gameState.stats[stat] += val;
+                    }
+                });
+            }
+
+            // ---------- ОБРАБОТКА СОБЫТИЯ ----------
+            function processEvent(advantage) {
+                const event = gameState.currentEvent;
+                if (!event) return;
+
+                const statValue = gameState.stats[event.check];
+                let roll;
+                if (advantage) {
+                    const r1 = d20();
+                    const r2 = d20();
+                    roll = Math.max(r1, r2);
+                    addLog(`☕ Кофе даёт преимущество! Броски: ${r1} и ${r2} → берём ${roll}.`, 'info');
+                    gameState.stats.Coffee--;
+                } else {
+                    roll = d20();
+                }
+
+                const total = roll + mod(statValue);
+                addLog(`🎲 d20 = ${roll} + ${mod(statValue)} (мод ${event.check}) = ${total} (DC ${event.dc})`, 'info');
+
+                let resultMessage, effects, cssClass;
+                if (total >= event.dc) {
+                    resultMessage = event.success.message;
+                    effects = event.success.effects;
+                    cssClass = 'success';
+                } else {
+                    resultMessage = event.fail.message;
+                    effects = event.fail.effects;
+                    cssClass = 'failure';
+                }
+
+                addLog(resultMessage, cssClass);
+                applyEffects(effects);
+                updateStatsDisplay();
+
+                // Проверка конца игры
+                if (gameState.stats.HP <= 0) {
+                    addLog("💔 Твоё здоровье иссякло. Ты роняешь лицо на клавиатуру. Последнее сообщение в Slack: 'gggggggggg…'");
+                    endGame(false);
+                    return;
+                }
+                if (gameState.stats.Sanity <= 0) {
+                    addLog("🧠 Твой рассудок ломается. Ты начинаешь видеть цифры Excel во сне наяву и разговаривать с кулером.");
+                    endGame(false);
+                    return;
+                }
+
+                // Завершение события
+                gameState.currentEvent = null;
+                gameState.processing = false;
+
+                // Проверка победы (после 8 часов)
+                if (gameState.hour >= 8) {
+                    victory();
+                    return;
+                }
+
+                // Показать кнопку следующего часа
+                renderNextHourButton();
+            }
+
+            function renderNextHourButton() {
+                actionsPanel.innerHTML = '';
+                if (gameState.hour < 8 && !gameState.gameOver) {
+                    const btn = document.createElement('button');
+                    btn.textContent = `⏩ Час ${gameState.hour + 1}:00`;
+                    btn.addEventListener('click', nextHour);
+                    actionsPanel.appendChild(btn);
+                }
+            }
+
+            function showCoffeeChoice() {
+                if (gameState.stats.Coffee > 0 && gameState.currentEvent) {
+                    actionsPanel.innerHTML = '';
+                    const div = document.createElement('div');
+                    div.className = 'coffee-options';
+                    div.innerHTML = `<p>У тебя есть ${gameState.stats.Coffee} ☕. Использовать кофе для преимущества?</p>`;
+                    const btnNormal = document.createElement('button');
+                    btnNormal.textContent = '🎲 Бросить d20';
+                    btnNormal.addEventListener('click', () => {
+                        actionsPanel.innerHTML = '';
+                        processEvent(false);
+                    });
+                    const btnAdv = document.createElement('button');
+                    btnAdv.textContent = '☕ Кофе (преимущество)';
+                    btnAdv.addEventListener('click', () => {
+                        actionsPanel.innerHTML = '';
+                        processEvent(true);
+                    });
+                    div.appendChild(btnNormal);
+                    div.appendChild(btnAdv);
+                    actionsPanel.appendChild(div);
+                } else {
+                    // Нет кофе, просто бросаем
+                    actionsPanel.innerHTML = '';
+                    const btn = document.createElement('button');
+                    btn.textContent = '🎲 Бросить d20';
+                    btn.addEventListener('click', () => {
+                        actionsPanel.innerHTML = '';
+                        processEvent(false);
+                    });
+                    actionsPanel.appendChild(btn);
+                }
+            }
+
+            function nextHour() {
+                if (gameState.processing || gameState.gameOver) return;
+                gameState.processing = true;
+                actionsPanel.innerHTML = ''; // убираем кнопку
+
+                gameState.hour++;
+                updateStatsDisplay();
+
+                const event = EVENTS[Math.floor(Math.random() * EVENTS.length)];
+                gameState.currentEvent = event;
+                addLog(`\n--- Час ${gameState.hour}:00 ---`, 'info');
+                addLog(`⚔️ ${event.desc} (Проверка ${event.check} DC ${event.dc})`);
+
+                showCoffeeChoice();
+            }
+
+            function victory() {
+                gameState.gameOver = true;
+                let msg = `⏰ 18:00! Ты слышишь божественный звук — системный звонок окончания рабочего дня.\n`;
+                msg += `Ты выжил. Израненный, но свободный. Завтра снова на работу.\n`;
+                msg += `🏆 Итог: HP=${gameState.stats.HP}, Sanity=${gameState.stats.Sanity}, XP=${gameState.stats.XP}`;
+                if (gameState.stats.XP >= 3) {
+                    msg += `\nПовышение! Теперь ты старший помощник младшего менеджера по ничему.`;
+                } else {
+                    msg += `\nТы остался на той же должности. Но могло быть и хуже — могло быть собрание в понедельник.`;
+                }
+                addLog(msg, 'success');
+                gameoverScreen.innerHTML = `<div class="gameover-screen" style="color:#66ff66; border-color:#66ff66;">
+                    <p>🎉 Поздравляем! Ты пережил рабочий день! 🎉</p>
+                    <p style="font-size:18px;">${msg.replace(/\n/g, '<br>')}</p>
+                    <button id="restart-btn" style="margin-top:20px;">Начать заново</button>
+                </div>`;
+                showScreen(gameoverScreen);
+                document.getElementById('restart-btn').addEventListener('click', restartGame);
+            }
+
+            function endGame(deathBySanity) {
+                gameState.gameOver = true;
+                actionsPanel.innerHTML = '';
+                let reason = deathBySanity ?
+                    "🧠 Твой рассудок ломается. Коллеги вызывают санитаров. Итог: бессрочный отпуск в дурке." :
+                    "💔 Ты уволен из жизни. Ты становишься легендой офиса — тем парнем, которого нашли только через три дня по запаху.";
+                addLog(reason, 'failure');
+                gameoverScreen.innerHTML = `
+                <div class="gameover-screen">
+                    <p>💀 GAME OVER 💀</p>
+                    <p style="font-size:18px;">${reason}</p>
+                    <button id="restart-btn" style="margin-top:20px;">Попробовать снова</button>
+                </div>`;
+                showScreen(gameoverScreen);
+                document.getElementById('restart-btn').addEventListener('click', restartGame);
+            }
+
+            function restartGame() {
+                gameState = {
+                    stats: { STR: 8, DEX: 8, INT: 8, CHA: 8, HP: 20, Sanity: 20, Coffee: 3, XP: 0 },
+                    hour: 0,
+                    currentEvent: null,
+                    processing: false,
+                    gameOver: false
+                };
+                logContainer.innerHTML = '';
+                actionsPanel.innerHTML = '';
+                updateStatsDisplay();
+                showScreen(charCreation);
+                // Сбросить ползунки
+                Object.values(sliders).forEach(s => s.value = 8);
+                Object.values(valDisplays).forEach(d => d.textContent = 8);
+                pointsLeftSpan.textContent = 12;
+                createBtn.disabled = true;
+            }
+
+            // ---------- СОЗДАНИЕ ПЕРСОНАЖА (ползунки) ----------
+            function updateSliders() {
+                const values = {
+                    str: parseInt(sliders.str.value),
+                    dex: parseInt(sliders.dex.value),
+                    int: parseInt(sliders.int.value),
+                    cha: parseInt(sliders.cha.value)
+                };
+
+                // Обновить отображение значений
+                valDisplays.str.textContent = values.str;
+                valDisplays.dex.textContent = values.dex;
+                valDisplays.int.textContent = values.int;
+                valDisplays.cha.textContent = values.cha;
+
+                // Вычисляем использованные очки (все что выше 8)
+                const used = (values.str - 8) + (values.dex - 8) + (values.int - 8) + (values.cha - 8);
+                const pool = 12 - used;
+                pointsLeftSpan.textContent = pool;
+
+                // Динамически ограничить максимум для каждого ползунка
+                Object.keys(sliders).forEach(stat => {
+                    const otherUsed = used - (values[stat] - 8);
+                    const maxPossible = 8 + (12 - otherUsed);
+                    sliders[stat].max = Math.min(20, maxPossible);
+                    // если текущее значение больше нового максимума, уменьшить
+                    if (parseInt(sliders[stat].value) > parseInt(sliders[stat].max)) {
+                        sliders[stat].value = sliders[stat].max;
+                        valDisplays[stat].textContent = sliders[stat].max;
+                    }
+                });
+
+                // Кнопка активна только когда пул = 0
+                createBtn.disabled = (pool !== 0);
+            }
+
+            // Привязка событий ползунков
+            Object.values(sliders).forEach(slider => {
+                slider.addEventListener('input', updateSliders);
+            });
+            // Инициализация
+            updateSliders();
+
+            // Кнопка создания персонажа
+            createBtn.addEventListener('click', () => {
+                if (pointsLeftSpan.textContent !== '0') return;
+                const stats = {
+                    STR: parseInt(sliders.str.value),
+                    DEX: parseInt(sliders.dex.value),
+                    INT: parseInt(sliders.int.value),
+                    CHA: parseInt(sliders.cha.value),
+                    HP: 20,
+                    Sanity: 20,
+                    Coffee: 3,
+                    XP: 0
+                };
+                gameState.stats = stats;
+                gameState.hour = 0;
+                gameState.gameOver = false;
+                gameState.processing = false;
+                logContainer.innerHTML = '';
+                actionsPanel.innerHTML = '';
+                updateStatsDisplay();
+                showScreen(gameScreen);
+                addLog("Ты входишь в опенспейс. Часы показывают 9:00. До свободы 8 часов.");
+                addLog("Каждый час приносит новое испытание. Выживи или пополни ряды призраков.");
+                renderNextHourButton();
+            });
+
+            // ---------- СТАРТ ----------
+            showScreen(charCreation);
+            updateSliders();
+        })();
+    </script>
+</body>
+</html>
